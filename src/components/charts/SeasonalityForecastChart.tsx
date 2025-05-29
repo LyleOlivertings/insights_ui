@@ -1,47 +1,54 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
+import { useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { TrendingUp } from 'lucide-react';
+import { ForecastResponse } from '../../types/api'; // Import the new data type
 
 interface SeasonalityForecastChartProps {
-  jobTitle: string;
+  data?: ForecastResponse; // Data is now ForecastResponse and optional
+  jobTitle: string; 
 }
 
-export const SeasonalityForecastChart = ({ jobTitle }: SeasonalityForecastChartProps) => {
-  // Mock daily data - will be replaced with API data
-  const data = [
-    { date: 'Jan 1', historical: 25, forecast: null },
-    { date: 'Jan 15', historical: 35, forecast: null },
-    { date: 'Feb 1', historical: 45, forecast: null },
-    { date: 'Feb 15', historical: 55, forecast: null },
-    { date: 'Mar 1', historical: 65, forecast: null },
-    { date: 'Mar 15', historical: 75, forecast: null },
-    { date: 'Apr 1', historical: 85, forecast: null },
-    { date: 'Apr 15', historical: 95, forecast: null },
-    { date: 'May 1', historical: 90, forecast: null },
-    { date: 'May 15', historical: null, forecast: 92 },
-    { date: 'Jun 1', historical: null, forecast: 94 },
-    { date: 'Jun 15', historical: null, forecast: 96 },
-    { date: 'Jul 1', historical: null, forecast: 95 },
-    { date: 'Jul 15', historical: null, forecast: 93 },
-    { date: 'Aug 1', historical: null, forecast: 91 },
-    { date: 'Aug 15', historical: null, forecast: 89 },
-    { date: 'Sep 1', historical: null, forecast: 87 }
-  ];
+export const SeasonalityForecastChart = ({ data, jobTitle }: SeasonalityForecastChartProps) => {
+  const chartData = useMemo(() => {
+    if (!data?.dates || !data?.values) return [];
+    return data.dates.map((date, index) => ({
+      date: new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      forecastValue: data.values[index], // Renamed from forecast_interest
+    }));
+  }, [data]);
+
+  if (!data || chartData.length === 0) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6 h-96 flex items-center justify-center">
+        <p className="text-gray-400">No forecast data available for {jobTitle}.</p>
+      </div>
+    );
+  }
+  
+  const yDomain = useMemo(() => {
+    if (chartData.length === 0) return [0, 100];
+    const values = chartData.map(item => item.forecastValue).filter(v => v !== null) as number[];
+    if (values.length === 0) return [0, 100];
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    return [Math.floor(minVal * 0.95), Math.ceil(maxVal * 1.05)];
+  }, [chartData]);
 
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="h-5 w-5 text-cyan-400" />
-        <h3 className="text-lg font-semibold">Daily Seasonality Trend with Forecast</h3>
+        <h3 className="text-lg font-semibold">Seasonality Trend with Forecast</h3>
       </div>
       
       <h4 className="text-md mb-4 text-gray-300">
-        Daily Seasonality Trend with 4-Month Forecast ({jobTitle})
+        Seasonality Trend with Forecast ({jobTitle})
       </h4>
       
-      <div className="h-64">
+      <div className="h-64"> {/* Ensure this has a defined height */}
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
               dataKey="date" 
@@ -51,29 +58,31 @@ export const SeasonalityForecastChart = ({ jobTitle }: SeasonalityForecastChartP
             <YAxis 
               stroke="#9CA3AF"
               fontSize={12}
-              domain={[20, 100]}
+              domain={yDomain}
               label={{ value: 'Interest', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#9CA3AF' } }}
+              allowDataOverflow={false}
+            />
+            <Tooltip
+                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem' }}
+                itemStyle={{ color: '#9CA3AF' }}
+                labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
             />
             <Legend />
             <Line 
               type="monotone" 
-              dataKey="historical" 
-              stroke="#3B82F6" 
-              strokeWidth={2}
-              name="Historical Trend"
-              dot={{ fill: '#3B82F6', r: 3 }}
-              connectNulls={false}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="forecast" 
+              dataKey="forecastValue" // Updated dataKey
               stroke="#06B6D4" 
               strokeWidth={2}
-              name="4-Month Forecast"
+              name="Forecast" // Updated name
               dot={{ fill: '#06B6D4', r: 3 }}
-              strokeDasharray="5 5"
-              connectNulls={false}
+              strokeDasharray="5 5" 
+              connectNulls // Handle potential nulls
             />
+            {/* The original component had a line for moving_average from ForecastDataPoint. 
+                The new ForecastResponse type doesn't have a separate moving_average field.
+                If MA needs to be displayed here, it would come from a different prop or the API response needs to include it.
+                For now, removing the MA line from this specific chart as per current ForecastResponse type.
+            */}
           </LineChart>
         </ResponsiveContainer>
       </div>

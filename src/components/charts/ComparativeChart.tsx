@@ -1,51 +1,80 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
+import { useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { BarChart3 } from 'lucide-react';
+import { CompareJobSkillsResponse } from '../../types/api'; // Import new type
 
 interface ComparativeChartProps {
-  compareJobs: string;
+  data?: CompareJobSkillsResponse; // Data is now CompareJobSkillsResponse and optional
+  jobTitles?: string[]; // Should match keys in data.comparison
 }
 
-export const ComparativeChart = ({ compareJobs }: ComparativeChartProps) => {
-  // Mock daily data - will be replaced with API data
-  const data = [
-    { date: 'Jan 1', dataScience: 55, machineLearning: 32 },
-    { date: 'Jan 5', dataScience: 58, machineLearning: 35 },
-    { date: 'Jan 10', dataScience: 62, machineLearning: 38 },
-    { date: 'Jan 15', dataScience: 65, machineLearning: 42 },
-    { date: 'Jan 20', dataScience: 68, machineLearning: 45 },
-    { date: 'Jan 25', dataScience: 72, machineLearning: 48 },
-    { date: 'Jan 30', dataScience: 75, machineLearning: 52 },
-    { date: 'Feb 5', dataScience: 78, machineLearning: 55 },
-    { date: 'Feb 10', dataScience: 82, machineLearning: 58 },
-    { date: 'Feb 15', dataScience: 85, machineLearning: 62 },
-    { date: 'Feb 20', dataScience: 88, machineLearning: 65 },
-    { date: 'Feb 25', dataScience: 92, machineLearning: 68 },
-    { date: 'Mar 1', dataScience: 95, machineLearning: 72 },
-    { date: 'Mar 5', dataScience: 98, machineLearning: 75 },
-    { date: 'Mar 10', dataScience: 85, machineLearning: 78 },
-    { date: 'Mar 15', dataScience: 88, machineLearning: 82 },
-    { date: 'Mar 20', dataScience: 85, machineLearning: 85 },
-    { date: 'Mar 25', dataScience: 82, machineLearning: 88 },
-    { date: 'Mar 30', dataScience: 78, machineLearning: 92 },
-    { date: 'Apr 5', dataScience: 75, machineLearning: 95 },
-    { date: 'Apr 10', dataScience: 72, machineLearning: 98 }
-  ];
+// Define a list of distinct colors for the lines
+const lineColors = ["#3B82F6", "#EF4444", "#10B981", "#F59E0B", "#6366F1"];
+
+export const ComparativeChart = ({ data, jobTitles }: ComparativeChartProps) => {
+  const chartData = useMemo(() => {
+    if (!data?.comparison || !jobTitles?.length) return [];
+
+    const allDates = new Set<string>();
+    jobTitles.forEach(title => {
+      const skillData = data.comparison[title]?.trend_data;
+      skillData?.dates.forEach(d => allDates.add(d));
+    });
+    const sortedDates = Array.from(allDates).sort((a,b) => new Date(a).getTime() - new Date(b).getTime());
+
+    return sortedDates.map(dateStr => {
+      const entry: { date: string; [key: string]: string | number | null } = { 
+        date: new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) 
+      };
+      jobTitles.forEach(title => {
+        const skillData = data.comparison[title]?.trend_data;
+        if (skillData) {
+          const dateIndex = skillData.dates.indexOf(dateStr);
+          entry[title] = dateIndex !== -1 ? skillData.values[dateIndex] : null;
+        } else {
+          entry[title] = null;
+        }
+      });
+      return entry;
+    });
+  }, [data, jobTitles]);
+
+  if (!data || chartData.length === 0) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6 h-96 flex items-center justify-center">
+        <p className="text-gray-400">No comparative data available.</p>
+      </div>
+    );
+  }
+  
+  const yDomain = useMemo(() => {
+    if (chartData.length === 0 || !jobTitles) return [0, 100];
+    const allValues = chartData.flatMap(item => 
+        jobTitles.map(title => item[title] as number)
+    ).filter(v => v !== null && v !== undefined);
+
+    if (allValues.length === 0) return [0, 100];
+    const minVal = Math.min(...allValues);
+    const maxVal = Math.max(...allValues);
+    return [Math.floor(minVal * 0.95), Math.ceil(maxVal * 1.05)];
+  }, [chartData, jobTitles]);
+
 
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex items-center gap-2 mb-4">
         <BarChart3 className="h-5 w-5 text-green-400" />
-        <h3 className="text-lg font-semibold">Daily Comparative Trends for Jobs/Skills</h3>
+        <h3 className="text-lg font-semibold">Comparative Trends for Jobs/Skills</h3>
       </div>
       
       <h4 className="text-md mb-4 text-gray-300">
-        Daily Comparative Trends for {compareJobs}
+        Comparative Trends for {jobTitles?.join(' vs ') || 'N/A'}
       </h4>
       
-      <div className="h-80">
+      <div className="h-80"> {/* Ensure this has a defined height */}
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
               dataKey="date" 
@@ -55,26 +84,28 @@ export const ComparativeChart = ({ compareJobs }: ComparativeChartProps) => {
             <YAxis 
               stroke="#9CA3AF"
               fontSize={12}
-              domain={[30, 100]}
+              domain={yDomain}
               label={{ value: 'Interest', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#9CA3AF' } }}
+              allowDataOverflow={false}
+            />
+            <Tooltip
+                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem' }}
+                itemStyle={{ color: '#9CA3AF' }}
+                labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
             />
             <Legend />
-            <Line 
-              type="monotone" 
-              dataKey="dataScience" 
-              stroke="#3B82F6" 
-              strokeWidth={2}
-              name="Data Science"
-              dot={{ fill: '#3B82F6', r: 3 }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="machineLearning" 
-              stroke="#EF4444" 
-              strokeWidth={2}
-              name="Machine Learning Engineer"
-              dot={{ fill: '#EF4444', r: 3 }}
-            />
+            {jobTitles?.map((title, index) => (
+              <Line 
+                key={title}
+                type="monotone" 
+                dataKey={title} // dataKey is the job title itself
+                stroke={lineColors[index % lineColors.length]} // Cycle through predefined colors
+                strokeWidth={2}
+                name={title}
+                dot={{ fill: lineColors[index % lineColors.length], r: 3 }}
+                connectNulls
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>

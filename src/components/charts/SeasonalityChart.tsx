@@ -1,27 +1,42 @@
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { useMemo } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Calendar } from 'lucide-react';
+import { SeasonalityData as ApiSeasonalityData } from '../../types/api'; // Renamed to avoid conflict
 
 interface SeasonalityChartProps {
-  jobTitle: string;
+  data?: ApiSeasonalityData; // Data is now ApiSeasonalityData and optional
+  jobTitle: string; 
 }
 
-export const SeasonalityChart = ({ jobTitle }: SeasonalityChartProps) => {
-  // Mock data - will be replaced with API data
-  const data = [
-    { month: '1', interest: 75 },
-    { month: '2', interest: 78 },
-    { month: '3', interest: 82 },
-    { month: '4', interest: 80 },
-    { month: '5', interest: 85 },
-    { month: '6', interest: 88 },
-    { month: '7', interest: 90 },
-    { month: '8', interest: 85 },
-    { month: '9', interest: 87 },
-    { month: '10', interest: 83 },
-    { month: '11', interest: 78 },
-    { month: '12', interest: 75 }
-  ];
+const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export const SeasonalityChart = ({ data, jobTitle }: SeasonalityChartProps) => {
+  const chartData = useMemo(() => {
+    if (!data?.months || !data?.values) return [];
+    return data.months.map((monthNum, index) => ({
+      monthName: monthNames[monthNum - 1], // Assuming monthNum is 1-12
+      value: data.values[index],
+    }));
+  }, [data]);
+
+  if (!data || chartData.length === 0) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6 h-96 flex items-center justify-center">
+        <p className="text-gray-400">No seasonality data available for {jobTitle}.</p>
+      </div>
+    );
+  }
+  
+  const yDomain = useMemo(() => {
+    if (chartData.length === 0) return [0, 100];
+    const values = chartData.map(item => item.value).filter(v => v !== null) as number[];
+    if (values.length === 0) return [0, 100];
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    return [Math.floor(minVal * 0.9), Math.ceil(maxVal * 1.1)];
+  }, [chartData]);
+
 
   return (
     <div className="bg-gray-800 rounded-lg p-6">
@@ -34,23 +49,29 @@ export const SeasonalityChart = ({ jobTitle }: SeasonalityChartProps) => {
         Seasonality Index ({jobTitle})
       </h4>
       
-      <div className="h-64">
+      <div className="h-64"> {/* Ensure this has a defined height */}
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
+          <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
-              dataKey="month" 
+              dataKey="monthName" // Updated dataKey
               stroke="#9CA3AF"
               fontSize={12}
             />
             <YAxis 
               stroke="#9CA3AF"
               fontSize={12}
-              domain={[0, 100]}
+              domain={yDomain}
               label={{ value: 'Average Interest', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#9CA3AF' } }}
+              allowDataOverflow={false}
+            />
+            <Tooltip
+                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem' }}
+                itemStyle={{ color: '#9CA3AF' }}
+                labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
             />
             <Bar 
-              dataKey="interest" 
+              dataKey="value" // Updated dataKey
               fill="#6366F1"
               radius={[2, 2, 0, 0]}
             />

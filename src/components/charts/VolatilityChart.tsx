@@ -1,51 +1,55 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { useMemo } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { Activity } from 'lucide-react';
+import { TimeseriesData } from '../../types/api'; // Import new type
 
 interface VolatilityChartProps {
-  jobTitle: string;
+  data?: TimeseriesData; // Data is now TimeseriesData and optional
+  jobTitle: string; 
 }
 
-export const VolatilityChart = ({ jobTitle }: VolatilityChartProps) => {
-  // Mock daily data - will be replaced with API data
-  const data = [
-    { date: 'Jan 1', volatility: 2.5 },
-    { date: 'Jan 8', volatility: 1.8 },
-    { date: 'Jan 15', volatility: 3.2 },
-    { date: 'Jan 22', volatility: 2.1 },
-    { date: 'Jan 29', volatility: 4.5 },
-    { date: 'Feb 5', volatility: 13.8 },
-    { date: 'Feb 12', volatility: 3.1 },
-    { date: 'Feb 19', volatility: 2.8 },
-    { date: 'Feb 26', volatility: 5.2 },
-    { date: 'Mar 5', volatility: 7.1 },
-    { date: 'Mar 12', volatility: 9.3 },
-    { date: 'Mar 19', volatility: 6.8 },
-    { date: 'Mar 26', volatility: 4.2 },
-    { date: 'Apr 2', volatility: 3.5 },
-    { date: 'Apr 9', volatility: 5.8 },
-    { date: 'Apr 16', volatility: 12.4 },
-    { date: 'Apr 23', volatility: 4.1 },
-    { date: 'Apr 30', volatility: 3.8 },
-    { date: 'May 7', volatility: 6.2 },
-    { date: 'May 14', volatility: 5.5 },
-    { date: 'May 21', volatility: 10.1 }
-  ];
+export const VolatilityChart = ({ data, jobTitle }: VolatilityChartProps) => {
+  const chartData = useMemo(() => {
+    if (!data?.dates || !data?.values) return [];
+    return data.dates.map((date, index) => ({
+      date: new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      value: data.values[index], // 'volatility_score' is now 'value'
+    }));
+  }, [data]);
+
+  if (!data || chartData.length === 0) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6 h-96 flex items-center justify-center">
+        <p className="text-gray-400">No volatility data available for {jobTitle}.</p>
+      </div>
+    );
+  }
+  
+  const yDomain = useMemo(() => {
+    if (chartData.length === 0) return [0, 1]; // Default for volatility scores (e.g. 0 to 1 or based on expected range)
+    const values = chartData.map(item => item.value).filter(v => v !== null) as number[];
+    if (values.length === 0) return [0, 1];
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    // Adjust padding based on typical volatility score range. If it can be negative, adjust minVal.
+    return [Math.max(0, Math.floor(minVal * 0.9)), Math.ceil(maxVal * 1.1)]; 
+  }, [chartData]);
 
   return (
     <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex items-center gap-2 mb-4">
         <Activity className="h-5 w-5 text-purple-400" />
-        <h3 className="text-lg font-semibold">Daily Volatility of Interest</h3>
+        <h3 className="text-lg font-semibold">Volatility of Interest</h3>
       </div>
       
       <h4 className="text-md mb-4 text-gray-300">
-        Daily Volatility of Interest in {jobTitle}
+        Volatility of Interest in {jobTitle}
       </h4>
       
-      <div className="h-64">
+      <div className="h-64"> {/* Ensure this has a defined height */}
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
               dataKey="date" 
@@ -55,17 +59,24 @@ export const VolatilityChart = ({ jobTitle }: VolatilityChartProps) => {
             <YAxis 
               stroke="#9CA3AF"
               fontSize={12}
-              domain={[0, 16]}
-              label={{ value: 'Volatility (Standard Deviation)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#9CA3AF' } }}
+              domain={yDomain}
+              label={{ value: 'Volatility Score', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#9CA3AF' } }}
+              allowDataOverflow={false}
+            />
+            <Tooltip
+                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem' }}
+                itemStyle={{ color: '#9CA3AF' }}
+                labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
             />
             <Line 
               type="monotone" 
-              dataKey="volatility" 
+              dataKey="value" // Updated dataKey
               stroke="#8B5CF6" 
               strokeWidth={2}
               dot={{ fill: '#8B5CF6', r: 3 }}
-              fill="#8B5CF6"
-              fillOpacity={0.1}
+              name="Volatility"
+              connectNulls // Handle potential nulls
+              // fill and fillOpacity are typically for Area components, removed for Line
             />
           </LineChart>
         </ResponsiveContainer>
