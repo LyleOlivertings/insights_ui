@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { SeasonalityChart } from "@/components/charts/SeasonalityChart";
 import { SeasonalityForecastChart } from "@/components/charts/SeasonalityForecastChart";
@@ -16,6 +16,7 @@ import { TrendAnalysisRequest, ComparativeTrendRequest } from "@/types/api";
 const Index = () => {
   // State for single job/skill analysis
   const [currentJobTitle, setCurrentJobTitle] = useState<string>("Software Engineer");
+  const [analyzedSkillName, setAnalyzedSkillName] = useState<string>(currentJobTitle);
   const [geo, setGeo] = useState<string | undefined>("US");
   const [maWindow, setMaWindow] = useState<number>(20);
   const [volatilityWindow, setVolatilityWindow] = useState<number>(4);
@@ -38,6 +39,12 @@ const Index = () => {
     enabled: false, 
   });
   const analyzedData = analysisQuery.data;
+
+  useEffect(() => {
+    if (analyzedData && analyzedData.skill_or_job) {
+      setAnalyzedSkillName(analyzedData.skill_or_job);
+    }
+  }, [analyzedData]);
 
   // State for comparative analysis
   const [compareJobTitles, setCompareJobTitles] = useState<string[]>(["Data Scientist", "Machine Learning Engineer"]);
@@ -76,7 +83,7 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-3">Job Trend Analyzer</h1>
-          <p className="text-gray-400 text-lg">Analyzing trends for: {currentJobTitle}</p>
+          <p className="text-gray-400 text-lg">Analyzing trends for: {analyzedSkillName || currentJobTitle}</p>
         </div>
 
         {/* Control Panel */}
@@ -108,7 +115,7 @@ const Index = () => {
         <div className="w-full">
           {analysisQuery.isLoading && <p className="text-center text-gray-400">Loading Insights...</p>}
           {analysisQuery.isError && <p className="text-center text-red-400">Error loading Insights: {analysisQuery.error.message}</p>}
-          {analyzedData && <InsightsPanel jobTitle={currentJobTitle} insights={analyzedData.insights} />}
+          {analyzedData && <InsightsPanel jobTitle={analyzedSkillName || currentJobTitle} insights={analyzedData.insights} />}
         </div>
 
         {/* Charts Grid */}
@@ -120,7 +127,7 @@ const Index = () => {
               {analysisQuery.isError && <p className="text-center text-red-400">Error loading Trend Data: {analysisQuery.error.message}</p>}
               {analyzedData?.trend_data && 
                 <TrendChart 
-                  jobTitle={currentJobTitle} 
+                  jobTitle={analyzedSkillName || currentJobTitle} 
                   data={analyzedData.trend_data} 
                   movingAverageData={analyzedData.moving_average} // Pass MA data to TrendChart
                 />}
@@ -128,7 +135,7 @@ const Index = () => {
             <div>
               {analysisQuery.isLoading && <p className="text-center text-gray-400">Loading Seasonality Data...</p>}
               {analysisQuery.isError && <p className="text-center text-red-400">Error loading Seasonality Data: {analysisQuery.error.message}</p>}
-              {analyzedData?.seasonality_data && <SeasonalityChart jobTitle={currentJobTitle} data={analyzedData.seasonality_data} />}
+              {analyzedData?.seasonality_data && <SeasonalityChart jobTitle={analyzedSkillName || currentJobTitle} data={analyzedData.seasonality_data} />}
             </div>
           </div>
 
@@ -137,14 +144,14 @@ const Index = () => {
             <div>
               {analysisQuery.isLoading && <p className="text-center text-gray-400">Loading Forecast Data...</p>}
               {analysisQuery.isError && <p className="text-center text-red-400">Error loading Forecast Data: {analysisQuery.error.message}</p>}
-              {analyzedData?.forecast_data && <SeasonalityForecastChart jobTitle={currentJobTitle} data={analyzedData.forecast_data} />}
+              {analyzedData?.forecast_data && <SeasonalityForecastChart jobTitle={analyzedSkillName || currentJobTitle} data={analyzedData.forecast_data} />}
             </div>
             <div>
               {analysisQuery.isLoading && <p className="text-center text-gray-400">Loading Forecast & MA Data...</p>}
               {analysisQuery.isError && <p className="text-center text-red-400">Error loading Forecast & MA Data: {analysisQuery.error.message}</p>}
               {analyzedData && (
                 <SeasonalityForecastMAChart 
-                  jobTitle={currentJobTitle} 
+                  jobTitle={analyzedSkillName || currentJobTitle} 
                   forecast_data={analyzedData.forecast_data} 
                   moving_average_data={analyzedData.moving_average} 
                 />
@@ -157,12 +164,12 @@ const Index = () => {
             <div>
               {analysisQuery.isLoading && <p className="text-center text-gray-400">Loading Volatility Data...</p>}
               {analysisQuery.isError && <p className="text-center text-red-400">Error loading Volatility Data: {analysisQuery.error.message}</p>}
-              {analyzedData?.volatility && <VolatilityChart jobTitle={currentJobTitle} data={analyzedData.volatility} />}
+              {analyzedData?.volatility && <VolatilityChart jobTitle={analyzedSkillName || currentJobTitle} data={analyzedData.volatility} />}
             </div>
             <div>
               {analysisQuery.isLoading && <p className="text-center text-gray-400">Loading Growth Rate Data...</p>}
               {analysisQuery.isError && <p className="text-center text-red-400">Error loading Growth Rate Data: {analysisQuery.error.message}</p>}
-              {analyzedData?.growth_rate && <GrowthRateChart jobTitle={currentJobTitle} data={analyzedData.growth_rate} />}
+              {analyzedData?.growth_rate && <GrowthRateChart jobTitle={analyzedSkillName || currentJobTitle} data={analyzedData.growth_rate} />}
             </div>
           </div>
 
