@@ -35,7 +35,7 @@ const Index = () => {
   const analysisQuery = useQuery({
     queryKey: ['jobSkillAnalysis', analysisRequestParams], // Use the whole object
     queryFn: () => analyzeJobSkill(analysisRequestParams),
-    enabled: !!currentJobTitle, 
+    enabled: false, 
   });
   const analyzedData = analysisQuery.data;
 
@@ -52,13 +52,27 @@ const Index = () => {
   const comparativeQuery = useQuery({
     queryKey: ['jobSkillComparison', comparativeRequestParams], // Use the whole object
     queryFn: () => compareJobSkills(comparativeRequestParams),
-    enabled: compareJobTitles.length > 0 && compareJobTitles.length <= 2 && compareJobTitles.every(title => title.trim() !== ""),
+    enabled: false,
   });
   const comparativeData = comparativeQuery.data;
 
+  // Search callback for single analysis
+  const handleSearchSingle = () => {
+    if (currentJobTitle.trim() !== "") {
+      analysisQuery.refetch();
+    }
+  };
+
+  // Search callback for comparative analysis
+  const handleSearchComparative = () => {
+    if (compareJobTitles.length > 0 && compareJobTitles.length <= 2 && compareJobTitles.every(title => title.trim() !== "")) {
+      comparativeQuery.refetch();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-full mx-auto space-y-8"> {/* Changed max-w-7xl to max-w-full */}
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-3">Job Trend Analyzer</h1>
@@ -85,6 +99,8 @@ const Index = () => {
             setCompareJobTitles={setCompareJobTitles}
             compareGeo={compareGeo}
             setCompareGeo={setCompareGeo}
+            onSearchSingle={handleSearchSingle} // Pass the new handler
+            onSearchComparative={handleSearchComparative} // Pass the new handler
           />
         </div>
         

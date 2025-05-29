@@ -1,6 +1,7 @@
 
 import { Input } from "@/components/ui/input"; // Assuming Input component exists
 import { Label } from "@/components/ui/label"; // Assuming Label component exists
+import { Button } from "@/components/ui/button"; // Import Button component
 
 interface ControlPanelProps {
   jobTitle: string;
@@ -19,6 +20,8 @@ interface ControlPanelProps {
   setCompareJobTitles: (value: string[]) => void;
   compareGeo: string | undefined;
   setCompareGeo: (value: string | undefined) => void;
+  onSearchSingle: () => void; // Add onSearchSingle prop
+  onSearchComparative: () => void; // Add onSearchComparative prop
 }
 
 export const ControlPanel = (props: ControlPanelProps) => {
@@ -30,7 +33,9 @@ export const ControlPanel = (props: ControlPanelProps) => {
     smoothingWindow, setSmoothingWindow,
     anomalyThreshold, setAnomalyThreshold,
     compareJobTitles, setCompareJobTitles,
-    compareGeo, setCompareGeo
+    compareGeo, setCompareGeo,
+    onSearchSingle, // Destructure onSearchSingle
+    onSearchComparative // Destructure onSearchComparative
   } = props;
 
   return (
@@ -113,6 +118,10 @@ export const ControlPanel = (props: ControlPanelProps) => {
             className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
           />
         </div>
+        {/* Search button for Single Analysis */}
+        <Button onClick={onSearchSingle} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white">
+          Search Single Analysis
+        </Button>
       </div>
 
       {/* Comparative Analysis Controls */}
@@ -146,6 +155,10 @@ export const ControlPanel = (props: ControlPanelProps) => {
             className="mt-1 w-full bg-gray-700 border-gray-600 text-white placeholder-gray-500"
           />
         </div>
+        {/* Search button for Comparative Analysis */}
+        <Button onClick={onSearchComparative} className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white">
+          Search Comparative Analysis
+        </Button>
       </div>
     </div>
   );

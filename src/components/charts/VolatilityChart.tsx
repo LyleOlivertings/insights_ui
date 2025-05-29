@@ -64,7 +64,7 @@ export const VolatilityChart = ({ data, jobTitle }: VolatilityChartProps) => {
               allowDataOverflow={false}
             />
             <Tooltip
-                contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem' }}
+                contentStyle={{ backgroundColor: '#1F2937', border: '0.5px solid #374151', borderRadius: '0.1rem' }}
                 itemStyle={{ color: '#9CA3AF' }}
                 labelStyle={{ color: '#FFFFFF', fontWeight: 'bold' }}
             />
