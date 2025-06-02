@@ -1,14 +1,14 @@
 
 import { useState, useEffect } from "react";
-import { TrendChart } from "@/components/charts/TrendChart";
-import { SeasonalityChart } from "@/components/charts/SeasonalityChart";
-import { SeasonalityForecastChart } from "@/components/charts/SeasonalityForecastChart";
-import { SeasonalityForecastMAChart } from "@/components/charts/SeasonalityForecastMAChart";
-import { VolatilityChart } from "@/components/charts/VolatilityChart";
-import { GrowthRateChart } from "@/components/charts/GrowthRateChart";
-import { ComparativeChart } from "@/components/charts/ComparativeChart";
-import { InsightsPanel } from "@/components/InsightsPanel";
-import { ControlPanel } from "@/components/ControlPanel"; // Import ControlPanel
+import { TrendChart } from "@/portable/components/charts/TrendChart";
+import { SeasonalityChart } from "@/portable/components/charts/SeasonalityChart";
+import { SeasonalityForecastChart } from "@/portable/components/charts/SeasonalityForecastChart";
+import { SeasonalityForecastMAChart } from "@/portable/components/charts/SeasonalityForecastMAChart";
+import { VolatilityChart } from "@/portable/components/charts/VolatilityChart";
+import { GrowthRateChart } from "@/portable/components/charts/GrowthRateChart";
+import { ComparativeChart } from "@/portable/components/charts/ComparativeChart";
+import { InsightsPanel } from "@/portable/components/InsightsPanel";
+import { ControlPanel } from "@/portable/components/ControlPanel"; // Import ControlPanel
 import { useQuery } from "@tanstack/react-query";
 import { analyzeJobSkill, compareJobSkills } from "@/services/api"; 
 import { TrendAnalysisRequest, ComparativeTrendRequest } from "@/types/api";
